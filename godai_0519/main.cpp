@@ -1,9 +1,13 @@
-#include <iostream>
-#include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
+ï»¿//
+// black_one_normal.jpgã§ã®ã¿ä¸Šæ‰‹ãã‚°ãƒ«ãƒ¼ãƒ—åŒ–ã§ãï¼Œãã®å¾Œã®æ•°ãˆä¸Šã’å‡¦ç†ã¯æœªå®š
+// åŸºæœ¬çš„ã«CUIã¨ã®å¯¾è©±å½¢å¼ã§å‡¦ç†ã‚’è¡Œã†
+//
 
-//ƒ‰ƒCƒuƒ‰ƒŠ‚ÌƒŠƒ“ƒNéŒ¾‚¾‚¯‚Ç‹C‚É‚µ‚È‚­‚Ä‚à‚¢‚¢‚Æv‚í‚ê
+#include <iostream>
+#include <tuple>
+#include <opencv2/opencv.hpp>
+
+//ãƒ©ã‚¤ãƒ–ãƒ©ãƒªã®ãƒªãƒ³ã‚¯å®£è¨€ã ã‘ã©æ°—ã«ã—ãªãã¦ã‚‚ã„ã„ã¨æ€ã‚ã‚Œ
 #ifdef _DEBUG
     #pragma comment(lib,"opencv_core240d.lib")
     #pragma comment(lib,"opencv_imgproc240d.lib")
@@ -14,75 +18,101 @@
     #pragma comment(lib,"opencv_highgui240.lib")
 #endif
 
-//Ô‚¢ƒGƒŠƒA‚ğ”²‚«o‚·ŠÖ”
+static const double PI = 6*asin(0.5);
+
+//èµ¤ã„ã‚¨ãƒªã‚¢ã‚’æŠœãå‡ºã™é–¢æ•°
 void red_area(cv::Mat& dst,const cv::Mat& hsv)
 {
-  cv::Mat channels[3],h_mask,c_mask;
+  //HSVã®è¦ç´ åˆ†è§£
+  cv::Mat channels[3],h_mask,h_mask_low,h_mask_high,c_mask;
   cv::split(hsv,channels);
 
-  cv::threshold(channels[0],h_mask,160,255,cv::THRESH_BINARY); //F‘Š‚ªÔ•t‹ß‚©‚Ç‚¤‚©
-  cv::threshold(channels[1],c_mask,150,255,cv::THRESH_BINARY); //Ê“x(M—p«)‚ª‚‚¢‚©‚Ç‚¤‚©
+  cv::threshold(channels[0],h_mask_low,10,255,cv::THRESH_BINARY); //è‰²ç›¸ãŒèµ¤ä»˜è¿‘ã‹ã©ã†ã‹
+  cv::threshold(channels[0],h_mask_high,170,255,cv::THRESH_BINARY); //è‰²ç›¸ãŒèµ¤ä»˜è¿‘ã‹ã©ã†ã‹
+  cv::threshold(channels[1],c_mask,180,255,cv::THRESH_BINARY); //å½©åº¦(ä¿¡ç”¨æ€§)ãŒé«˜ã„ã‹ã©ã†ã‹
 
-  //F‘Š‚ªÔ•t‹ß‚ÅCÊ“x‚ª‚‚¢•”•ª(->dst)
+  cv::bitwise_not(h_mask_low,h_mask_low);
+  cv::bitwise_or(h_mask_low,h_mask_high,h_mask);
+
+  //è‰²ç›¸ãŒèµ¤ä»˜è¿‘ã§ï¼Œå½©åº¦ãŒé«˜ã„éƒ¨åˆ†(->dst)
   cv::bitwise_and(h_mask,c_mask,dst);
 
-  //Œµ‚µ‚ß‚Ì”»’è‚ğ‚µ‚½‚©‚ç–c’£‚³‚¹‚é
+  //å³ã—ã‚ã®åˆ¤å®šã‚’ã—ãŸã‹ã‚‰è†¨å¼µã•ã›ã‚‹
   cv::dilate(dst,dst,cv::Mat());
   return;
 }
 
-//•‚¢ƒGƒŠƒA‚ğ”²‚«o‚·
+//é»’ã„ã‚¨ãƒªã‚¢ã‚’æŠœãå‡ºã™
 void black_area(cv::Mat& dst,const cv::Mat& image)
 {
-  //RGB‚É•ªŠ„
+  //RGBã«åˆ†å‰²
   cv::Mat channels[3],r,g,b;
   cv::split(image,channels);
   
-  //(Še—v‘f‚Å)•‚­‚È‚¢‚Æ‚±
-  cv::threshold(channels[0],r,50,255,cv::THRESH_BINARY);
-  cv::threshold(channels[1],g,50,255,cv::THRESH_BINARY);
-  cv::threshold(channels[2],b,50,255,cv::THRESH_BINARY);
+  //(å„è¦ç´ ã§)é»’ããªã„ã¨ã“
+  cv::threshold(channels[0],r,70,255,cv::THRESH_BINARY);
+  cv::threshold(channels[1],g,70,255,cv::THRESH_BINARY);
+  cv::threshold(channels[2],b,70,255,cv::THRESH_BINARY);
 
-  //(Še—v‘f‚Å)”½“]‚³‚¹‚Ä•‚¢‚Æ‚±
+  //(å„è¦ç´ ã§)åè»¢ã•ã›ã¦é»’ã„ã¨ã“
   bitwise_not(r,r);
   bitwise_not(g,g);
   bitwise_not(b,b);
 
-  //‡‘Ì(->dst)
+  //åˆä½“(->dst)
   cv::bitwise_and(r,g,dst);
   cv::bitwise_and(b,dst,dst);
 
-  //Œµ‚µ‚ß‚Ì”»’è‚ğ‚µ‚½‚©‚ç–c’£‚³‚¹‚é
+  //cv::Mat channels[3],v_mask;
+  //cv::split(image,channels);
+
+  //cv::threshold(channels[2],v_mask,100,255,cv::THRESH_BINARY);
+  //bitwise_not(v_mask,v_mask);
+  //dst = v_mask;
+
+  //å³ã—ã‚ã®åˆ¤å®šã‚’ã—ãŸã‹ã‚‰è†¨å¼µã•ã›ã‚‹
   cv::dilate(dst,dst,cv::Mat());
 }
 
-std::vector<std::vector<cv::Point>> contours;
+std::vector<cv::Point2f> rect_to_points(const cv::RotatedRect& rect)
+{
+  cv::Point2f points[4];
+  rect.points(points);
 
-//ƒ}ƒEƒXƒNƒŠƒbƒN—pŠÖ”(ƒNƒŠƒbƒN‚·‚é“x‚ÉŒÄ‚Î‚ê‚Ü‚·)
-//cv::setMouseCallback‚ÌƒhƒLƒ…ƒƒ“ƒg‚É’–Ú
-void inactive_area_input(int event, int x, int y, int flags, void* param){
-  static short start_x,start_y,end_x,end_y; // VC10‚àGCC‚àshort‚ª2ƒoƒCƒg‚ÅƒRƒ“ƒpƒCƒ‹‚³‚ê‚é‚Ì‚ğˆ«—pD
+  std::vector<cv::Point2f> result;
+  for(int i=0; i<4; ++i) result.push_back(points[i]);
+  return result;
+}
+
+//ãƒã‚¦ã‚¹ã‚¯ãƒªãƒƒã‚¯ç”¨é–¢æ•°(ã‚¯ãƒªãƒƒã‚¯ã™ã‚‹åº¦ã«å‘¼ã°ã‚Œã¾ã™)
+//cv::setMouseCallbackã®ãƒ‰ã‚­ãƒ¥ãƒ¡ãƒ³ãƒˆã«æ³¨ç›®
+void inactive_area_input(int event, int x, int y, int flags, void* param)
+{
+  static short start_x,start_y,end_x,end_y; // VC10ã‚‚GCCã‚‚shortãŒ2ãƒã‚¤ãƒˆã§ã‚³ãƒ³ãƒ‘ã‚¤ãƒ«ã•ã‚Œã‚‹ã®ã‚’æ‚ªç”¨ï¼
+  static bool  first_call = true; //å‡ºåŠ›æ•´å½¢ç”¨
 
   if(event == CV_EVENT_LBUTTONDOWN)
   {
-    //ƒNƒŠƒbƒNŠJn‚ÌÀ•W‚ğŠi”[
+    //ã‚¯ãƒªãƒƒã‚¯é–‹å§‹æ™‚ã®åº§æ¨™ã‚’æ ¼ç´
     start_x = x; start_y = y;
-    std::cout << "Click" << std::endl;
   }
-  if(event == CV_EVENT_LBUTTONUP)
+  else if(event == CV_EVENT_LBUTTONUP)
   {
-    //ƒhƒ‰ƒbƒOI—¹‚ÌÀ•W‚ğŠi”[
+    //ãƒ‰ãƒ©ãƒƒã‚°çµ‚äº†æ™‚ã®åº§æ¨™ã‚’æ ¼ç´
     end_x = x; end_y = y;
 
-    //ƒhƒ‰ƒbƒOó‹µ‚Ì•\¦
-    std::cout << "UnClick" << std::endl;
-    std::cout << "(" << start_x << "," << start_y << ") - (" << end_x << "," << end_y << ")" << std::endl;
+    //ãƒ‰ãƒ©ãƒƒã‚°çŠ¶æ³ã®è¡¨ç¤º
+    if(first_call) first_call = false;
+    else std::cout << "\n";
+    std::cout << "Drag And Droped:  (" << start_x << "," << start_y << ") -> (" << end_x << "," << end_y << ")" << std::endl;
 
-    //main‚Ìsenddata‚Æ‚â‚ç‚Íparam‚É—ˆ‚é‚Ì‚ÅCƒ|ƒCƒ“ƒ^•ÏŠ·
-    const std::pair<cv::Mat*,cv::Mat*> *data = reinterpret_cast<std::pair<cv::Mat*,cv::Mat*>*>(param);
-    cv::Mat* out = data->second;
+    //mainã®senddataã¨ã‚„ã‚‰ã¯paramã«æ¥ã‚‹ã®ã§ï¼Œãƒã‚¤ãƒ³ã‚¿å¤‰æ›
+    const auto data = reinterpret_cast<std::tuple<cv::Mat*,cv::Mat*,cv::Mat*>*>(param);
+    cv::Mat* image = std::get<0>(*data);
+    cv::Mat* red   = std::get<1>(*data);
+    cv::Mat* black = std::get<2>(*data);
 
-    //start‚ª¶ãCend‚ª‰E‰º‚É—ˆ‚é‚æ‚¤‚ÉC³
+    //startãŒå·¦ä¸Šï¼ŒendãŒå³ä¸‹ã«æ¥ã‚‹ã‚ˆã†ã«ä¿®æ­£
     if(start_x > end_x)
     {
       short tmp = start_x;
@@ -96,66 +126,486 @@ void inactive_area_input(int event, int x, int y, int flags, void* param){
       end_y = tmp;
     }
 
-    //‰æ–ÊŠO‚Ö‚ÌƒNƒŠƒbƒN‚ğC³
-    start_x = std::max((short)0,start_x);
+    //ç”»é¢å¤–ã¸ã®ã‚¯ãƒªãƒƒã‚¯ã‚’ä¿®æ­£
+    start_x = std::max(static_cast<short>(0),start_x);
     start_y = std::max((short)0,start_y);
-    end_x   = std::min((short)out->cols,end_x);
-    end_y   = std::min((short)out->rows,end_y);
+    end_x   = std::min((short)red->cols,end_x);
+    end_y   = std::min((short)red->rows,end_y);
 
-    //C³Œ‹‰Ê
-    std::cout << "(" << start_x << "," << start_y << ") - (" << end_x << "," << end_y << ")\n" << std::endl;
+    //ä¿®æ­£çµæœ
+    std::cout << "After Correction: (" << start_x << "," << start_y << ") -> (" << end_x << "," << end_y << ")" << std::endl;
 
-    //‘I‘ğ”ÍˆÍ‚Ì“h‚è‚Â‚Ô‚µ
+    //é¸æŠç¯„å›²ã®å¡—ã‚Šã¤ã¶ã—
     for(int i = start_y; i < end_y; ++i)
+    {
       for(int j = start_x; j < end_x; ++j)
-        out->at<unsigned char>(i,j) = 0;
-    
-    //—ÖŠsî•ñ‚Ìíœ‚ÆÄ’Tõ
-    contours.clear();
-    cv::findContours(*out,contours,CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
+      {
+        red->at<unsigned char>(i,j) = 0;
+        black->at<unsigned char>(i,j) = 0;
+      }
+    }
 
-    //ã‘‚«•\¦
-    cv::Mat temp = data->first->clone();
+    //èµ¤ãƒ»é»’åˆæˆ
+    cv::Mat out;
+    bitwise_or(*red,*black,out); //èµ¤ã‹é»’ã®ã¨ã“ã‚(->out)
+    
+    //è¼ªéƒ­æƒ…å ±ã®å‰Šé™¤ã¨å†æ¢ç´¢
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(out,contours,CV_RETR_CCOMP,CV_CHAIN_APPROX_SIMPLE);
+
+    //ä¸Šæ›¸ãè¡¨ç¤º
+    cv::Mat temp = image->clone();
     cv::drawContours(temp,contours,-1,CV_RGB(0,0,255),2);
     cv::imshow("temp",temp);
+  }
+  return;
+}
+
+void disenable_rect_input(int event, int x, int y, int flags, void* param)
+{
+  static short down_x = -1, down_y = -1;
+  if(event == CV_EVENT_LBUTTONDOWN)
+  {
+    //ã‚¯ãƒªãƒƒã‚¯é–‹å§‹æ™‚ã®åº§æ¨™ã‚’æ ¼ç´
+    down_x = x; down_y = y;
+  }
+  else if(event == CV_EVENT_LBUTTONUP)
+  {
+    if(down_x == (short)x && down_y == (short)y)
+    {
+      std::cout << "Clicked: (" << x << "," << y << ")" << std::endl;
+
+      const cv::Point2f click_point(down_x,down_y);
+      auto contours = static_cast<std::tuple<cv::Mat*,std::vector<cv::RotatedRect>*,std::vector<cv::RotatedRect>*>*>(param);
+      auto image = std::get<0>(*contours);
+      auto red_contours = std::get<1>(*contours);
+      auto black_contours = std::get<2>(*contours);
+
+      //èµ¤â†’é»’ã¨æ¢ç´¢ã—ï¼Œæœ€åˆã«è¦‹ã¤ã‹ã£ãŸã‚‚ã®ã‚’å‰Šé™¤
+      bool match = false;
+      for(auto it = red_contours->cbegin(); it != red_contours->cend(); ++it)
+      {
+        if(cv::pointPolygonTest(rect_to_points(*it),click_point,false) >= 0.0)
+        {
+          match = true;
+          red_contours->erase(it);
+          break;
+        }
+      }
+      if(!match)
+      {
+        for(auto it = black_contours->cbegin(); it != black_contours->cend(); ++it)
+        {
+          if(cv::pointPolygonTest(rect_to_points(*it),click_point,false) >= 0.0)
+          {
+            black_contours->erase(it);
+            break;
+          }
+        }
+      }
+
+      //ä¸Šæ›¸ãæç”»
+      cv::Mat temp = image->clone();
+      for(auto it = red_contours->cbegin(), end = red_contours->cend(); it != end; ++it)
+      {
+        cv::Point2f vtx[4];
+        it->points(vtx);
+        for(int i=0; i<4; ++i) cv::line(temp, vtx[i], vtx[i<3?i+1:0], cv::Scalar(200,100,100), 2, CV_AA);
+      }
+      for(auto it = black_contours->cbegin(), end = black_contours->cend(); it != end; ++it)
+      {
+        cv::Point2f vtx[4];
+        it->points(vtx);
+        for(int i=0; i<4; ++i) cv::line(temp, vtx[i], vtx[i<3?i+1:0], cv::Scalar(100,100,200), 2, CV_AA);
+      }
+      cv::imshow("rect_temp",temp);
+    }
+  }
+  return;
+}
+
+std::vector<cv::RotatedRect>& erase_big_rect(std::vector<cv::RotatedRect>& rects)
+{
+  for(auto it=rects.cbegin(); it != rects.cend();)
+  {
+    if(it->size.width>50 || it->size.height>50) it = rects.erase(it);
+    else ++it;
+  }
+  return rects;
+}
+std::vector<cv::RotatedRect>& erase_small_rect(std::vector<cv::RotatedRect>& rects)
+{
+  for(auto it=rects.cbegin(); it != rects.cend();)
+  {
+    if(it->size.width<5 || it->size.height<5) it = rects.erase(it);
+    else ++it;
+  }
+  return rects;
+}
+
+void erase_overlap(std::vector<cv::RotatedRect>& red_sources,std::vector<cv::RotatedRect>& black_sources)
+{
+  for(size_t i=0; i<black_sources.size(); ++i)
+  {
+    const std::vector<cv::Point2f> contour = rect_to_points(black_sources[i]);
+    for(size_t j=i+1; j<black_sources.size();) //Not Increment
+    {
+      if(cv::pointPolygonTest(contour,black_sources[j].center,false) >= 0.0) black_sources.erase(black_sources.begin() + j);
+      else ++j;
+    }
+    for(size_t j=0; j<red_sources.size();) //Not Increment
+    {
+      if(cv::pointPolygonTest(contour,red_sources[j].center,false) >= 0.0) red_sources.erase(red_sources.begin() + j);
+      else ++j;
+    }
+  }
+  
+  return;
+}
+
+template<class T = float>
+class line_segment{
+  const cv::Point_<T> orient_vector_;
+  const cv::Point_<T> fixed_point_;
+
+public:
+  line_segment(const T& x1,const T& y1,const T& x2,const T& y2)
+    : orient_vector_(x2-x1,y2-y1),
+      fixed_point_(x1,y1)
+  {
+  }
+  line_segment(const cv::Point_<T>& p1,const cv::Point_<T>& p2)
+    : orient_vector_(p2.x-p1.x,p2.y-p1.y),
+      fixed_point_(p1)
+  {
+  }
+  
+  bool is_parallel(const line_segment& other,const T& tolerance_angle = PI/18) const
+  {
+    const double x1 = this->orient_vector_.x, y1 = this->orient_vector_.y;
+    const double x2 = other.orient_vector_.x, y2 = other.orient_vector_.y;
+    const double angle = acos((x1*x2 + y1*y2) / (hypot(x1,y1)*hypot(x2,y2)));
+
+    return (-tolerance_angle <= angle && angle <= tolerance_angle);
+  }
+  bool is_normal(const line_segment& other,const T& tolerance_angle = PI/18) const
+  {
+    const double x1 = this->orient_vector_.x, y1 = this->orient_vector_.y;
+    const double x2 = other.orient_vector_.x, y2 = other.orient_vector_.y;
+    const double angle = acos((x1*x2 + y1*y2) / (hypot(x1,y1)*hypot(x2,y2)));
+    
+    const double right_angle = PI/2;
+    return (right_angle-tolerance_angle <= angle && angle <= right_angle+tolerance_angle);
+  }
+
+  bool operator|| (const line_segment& other) const
+  {
+    return is_parallel(other);
+  }
+  bool operator+ (const line_segment& other) const
+  {
+    return is_normal(other);
+  }
+};
+
+template<typename Type>
+inline double calc_distance(const cv::Point_<Type> &p1,const cv::Point_<Type> &p2)
+{
+  return std::sqrt(
+    std::pow(static_cast<double>(std::abs(p1.x-p2.x)),2) + std::pow(static_cast<double>(std::abs(p1.y-p2.y)),2)
+    );
+}
+
+void grouping(
+  std::vector<std::vector<cv::RotatedRect>>& groups,
+  std::vector<cv::RotatedRect>& sources
+  )
+{
+  for(size_t i=0; i<sources.size(); ++i)
+  {
+    for(size_t j=i+1; j<sources.size(); ++j)
+    {
+      const float angle_distance = std::fabs(sources[i].angle - sources[i].angle);
+      const double center_distance = calc_distance(sources[i].center, sources[j].center);
+      const double average_diameter = (sources[i].size.width + sources[i].size.height + sources[j].size.width + sources[j].size.height) / 4.0; //è¦æ¤œè¨
+
+      if((center_distance > average_diameter*2.0) || (center_distance < average_diameter*3.0)) //è¦æ¤œè¨
+      {
+        //å¤–åˆ†ç‚¹ã‚’æ¼ã‚‹
+        const cv::Point2f ext_i(2.0*sources[i].center - sources[j].center);
+        const cv::Point2f ext_j(2.0*sources[j].center - sources[i].center);
+
+        //ã¨ã‚Šã¾å…¨æ¢ç´¢
+        //<PointPolygonTest,nç•ªç›®,ext_i(true) or ext_j(false)>
+        std::vector<std::tuple<double,int,bool>> matching_list;
+        for(size_t k=0; k<sources.size(); ++k)
+        {
+          if(k==i || k==j) continue;
+          
+          const std::vector<cv::Point2f> contours(rect_to_points(sources[k]));
+          {
+            const double measure = cv::pointPolygonTest(contours,ext_i,true);
+            if(measure >= 0.0) matching_list.push_back(std::make_tuple(measure,k,true));
+          }
+          {
+            const double measure = cv::pointPolygonTest(contours,ext_j,true);
+            if(measure >= 0.0) matching_list.push_back(std::make_tuple(measure,k,false));
+          }
+        }
+        
+        if(!matching_list.empty())
+        {
+          //1ã¤ä»¥ä¸Šãƒãƒƒãƒãƒ³ã‚°ã—ã¦ã„ã‚Œã°
+          //ã‚½ãƒ¼ãƒˆã¨æœ€å¤§ãƒãƒƒãƒãƒ³ã‚°å–ã‚Šå‡ºã—(æœ€åˆã®ä¸€å€‹ã ã‘æ¢ç´¢ã—ã¦ã‚‚ãŠï½‹ã ã‘ã©é¢å€’ãã•ã„ã‹ã‚‰STLã§)
+          std::partial_sort(matching_list.begin(),matching_list.begin()+1,matching_list.end(),
+            [](const std::tuple<double,int,bool>& lhs,const std::tuple<double,int,bool>& rhs)->bool{
+              return std::get<0>(lhs) > std::get<0>(rhs);
+            });
+          const std::tuple<double,int,bool>& most_match_info = matching_list.front();
+          const int matched_order = std::get<1>(most_match_info);
+
+          std::vector<cv::RotatedRect> group;
+          if(std::get<2>(most_match_info))
+          {
+			//matched_order - i - j ã¨å­˜åœ¨
+            group.push_back(sources[matched_order]);
+            group.push_back(sources[i]);
+            group.push_back(sources[j]);
+            sources.erase(sources.begin()+j);
+            sources.erase(sources.begin()+i);
+            sources.erase(sources.begin()+matched_order);
+          }
+          else
+          {
+			//i - j - matched_order ã¨å­˜åœ¨
+            group.push_back(sources[i]);
+            group.push_back(sources[j]);
+            group.push_back(sources[matched_order]);
+            sources.erase(sources.begin()+matched_order);
+            sources.erase(sources.begin()+j);
+            sources.erase(sources.begin()+i);
+          }
+          groups.push_back(std::move(group));
+
+        }
+        else
+        {
+          //ãƒãƒƒãƒãƒ³ã‚°ãŒç„¡ã„ã¨ã„ã†ã“ã¨ã¯ ( ã“ã®ãµãŸã¤ã®ã‚°ãƒ«ãƒ¼ãƒ— | ã“ã‚Œã‚’å«ã‚€å››è§’å½¢(ã‚ã¨ã§ãã£ã¤ã‘ã‚‹) )
+          std::vector<cv::RotatedRect> group;
+          group.push_back(sources[i]);
+          group.push_back(sources[j]);
+          sources.erase(sources.begin()+j);
+          sources.erase(sources.begin()+i);
+          groups.push_back(std::move(group));
+        }
+      }
+    }
+  }
+
+  std::cout << "Remain Source: " << sources.size() << std::endl;
+  if(sources.size() > 0) grouping(groups,sources);
+
+  return;
+}
+
+//2ï½3ã®ã‚°ãƒ«ãƒ¼ãƒ—ã‚’æ›´ã«åˆä½“ã—ãŸã‚Šã—ãªã‹ã£ãŸã‚Š
+void merge(std::vector<std::vector<cv::RotatedRect>>& groups)
+{
+  for(size_t i=0; i<groups.size(); ++i)
+  {
+    for(size_t j=i+1; j<groups.size();)
+    {
+      const line_segment<float> i_line(groups[i].front().center, groups[i].back().center);
+      const line_segment<float> j_line(groups[j].front().center, groups[j].back().center);
+
+      if(i_line || j_line)
+      {
+        std::vector<cv::RotatedRect> v;
+        for(auto it = groups[i].cbegin(), end = groups[i].cend(); it != end; ++it) v.push_back(*it);
+        for(auto it = groups[j].cbegin(), end = groups[j].cend(); it != end; ++it) v.push_back(*it);
+        groups[i] = std::move(v);
+        groups.erase(groups.begin()+j);
+
+        ++i;
+        j=i+1;
+        return;
+      }
+      else ++j;
+    }
   }
 }
 
 int main()
 {
-  //image‚ÉBGR‰æ‘œæ‚è‚İChsv‚ÉHSVŒ`®‚É•ÏŠ·‚µ‚½‚à‚Ì‚ğŠi”[
-  //ˆê”Ê‚ÉƒRƒ“ƒsƒ…[ƒ^‚Åˆµ‚í‚ê‚éJPEG/BMP“™‚ÍBGR‚Å•Û‘¶‚³‚ê‚Ä‚¢‚ÄCRGB‚Å‚Í‚È‚¢
-  cv::Mat image = cv::imread("img.jpg",1),hsv;
+  //imageã«BGRç”»åƒå–ã‚Šè¾¼ã¿ï¼Œhsvã«HSVå½¢å¼ã«å¤‰æ›ã—ãŸã‚‚ã®ã‚’æ ¼ç´
+  //ä¸€èˆ¬ã«ã‚³ãƒ³ãƒ”ãƒ¥ãƒ¼ã‚¿ã§æ‰±ã‚ã‚Œã‚‹JPEG/BMPç­‰ã¯BGRã§ä¿å­˜ã•ã‚Œã¦ã„ã¦ï¼ŒRGBã§ã¯ãªã„
+  cv::Mat image = cv::imread("./0731_pic/black_one_normal.jpg",1),hsv;
+  image.convertTo(image,image.type(),2,-100);
+
   cv::cvtColor(image,hsv,CV_BGR2HSV);
   
-  //À‘•Ï‚İ‚ÌŠÖ”‚ğƒR[ƒ‹
+  //å®Ÿè£…æ¸ˆã¿ã®é–¢æ•°ã‚’ã‚³ãƒ¼ãƒ«
   cv::Mat red,black,out;
   red_area(red,hsv);
   black_area(black,image);
-  bitwise_or(red,black,out); //Ô‚©•‚Ì‚Æ‚±‚ë(->out)
+  bitwise_or(red,black,out); //èµ¤ã‹é»’ã®ã¨ã“ã‚(->out)
   
-  //—ÖŠs’Tõ
-  cv::findContours(out,contours,CV_RETR_TREE,CV_CHAIN_APPROX_SIMPLE);
-
-  //tmp‚Éimage‚ğŠ®‘SƒRƒs[(ƒNƒ[ƒ“)
+  //è¼ªéƒ­æ¢ç´¢
   cv::Mat temp = image.clone();
-  cv::drawContours(temp,contours,-1,CV_RGB(0,0,255),2); //temp‚É—ÖŠs‘‚«o‚µ
+  {
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(out,contours,CV_RETR_CCOMP,CV_CHAIN_APPROX_SIMPLE);
+    cv::drawContours(temp,contours,-1,CV_RGB(0,0,255),2); //tempã«è¼ªéƒ­æ›¸ãå‡ºã—
+  }
   
-  //‰æ–Ê‚É•\¦
+  //ç”»é¢ã«è¡¨ç¤º
   cv::namedWindow("src");
   cv::namedWindow("temp");
-  cv::imshow("src",image);  
+  cv::imshow("src",image);
   cv::imshow("temp",temp);
-   
-  std::pair<cv::Mat*,cv::Mat*> senddata = std::pair<cv::Mat*,cv::Mat*>(&image,&out); //setMouseCallback‚Å“n‚³‚ê‚éƒf[ƒ^
-  cv::setMouseCallback("temp",&inactive_area_input,&senddata); //ƒ}ƒEƒXƒNƒŠƒbƒN“®ìİ’è
   
-  char inputkey;
-  while(inputkey = cv::waitKey(0), inputkey != 'q'); //q‚ª“ü—Í‚³‚ê‚é‚Ü‚Å‘Ò‹@
+  //ä»Šå›ã®é›‘ã‚¨ãƒªã‚¢ã®è¡¨ç¤º
+  std::cout << "--Choose \"InActive Area\"--" << std::endl;
+  {
+    std::tuple<cv::Mat*,cv::Mat*,cv::Mat*> senddata = std::tuple<cv::Mat*,cv::Mat*,cv::Mat*>(&image,&red,&black); //setMouseCallbackã§æ¸¡ã•ã‚Œã‚‹ãƒ‡ãƒ¼ã‚¿
+    cv::setMouseCallback("temp",&inactive_area_input,&senddata); //ãƒã‚¦ã‚¹ã‚¯ãƒªãƒƒã‚¯å‹•ä½œè¨­å®š
+  
+    char inputkey;
+    while(inputkey = cv::waitKey(0), inputkey != 'q'); //qãŒå…¥åŠ›ã•ã‚Œã‚‹ã¾ã§å¾…æ©Ÿ
+  }
+  cv::destroyWindow("temp");
+  std::cout << "--End--\n" << std::endl;
 
   //
-  // ˆ—II
+  // å‡¦ç†é–‹å§‹
   //
+  //std::cout << "Process Start" << std::endl;
+
+  // å››è§’å½¢ã¨è§’åº¦(RotatedRect)ã§å…¨ã¦ã®ç‚¹ã‚’è¡¨ã™
+  std::vector<cv::RotatedRect> black_boxes, red_boxes;
+  {
+    std::vector<std::vector<cv::Point>> black_contours, red_contours;
+    cv::findContours(black,black_contours,CV_RETR_CCOMP,CV_CHAIN_APPROX_SIMPLE);
+    cv::findContours(  red,  red_contours,CV_RETR_CCOMP,CV_CHAIN_APPROX_SIMPLE);
+    for(size_t i=0; i<black_contours.size(); ++i) black_boxes.push_back(cv::minAreaRect(black_contours[i]));
+    for(size_t i=0; i<red_contours.size();   ++i)   red_boxes.push_back(cv::minAreaRect(  red_contours[i]));
+  }
+  
+  //å¤§ãã„Rectã¨å°ã•ã„Rectã®å‰Šé™¤
+  erase_big_rect(red_boxes);
+  erase_small_rect(red_boxes);
+  erase_big_rect(black_boxes);
+  erase_small_rect(black_boxes);
+  
+  //
+  // (è¦æ¤œè¨)ã“ã“ã§ä¸­å¿ƒãŒä»–ã®è¼ªéƒ­å†…ã«å…¥ã‚‹Rectã‚’æ¶ˆã™å‡¦ç†ã‚’å…¥ã‚ŒãŸã»ã†ãŒè‰¯ã•ãã†ã ã‚ˆã­
+  //
+  erase_overlap(red_boxes, black_boxes);
+
+  //è¡¨ç¤º
+  temp = image.clone();
+  for(auto it = black_boxes.cbegin(), end = black_boxes.cend(); it != end; ++it)
+  {
+    cv::Point2f vtx[4];
+    it->points(vtx);
+    for(int i=0; i<4; ++i) cv::line(temp, vtx[i], vtx[i<3?i+1:0], cv::Scalar(100,100,200), 2, CV_AA);
+  }
+  for(auto it = red_boxes.cbegin(), end = red_boxes.cend(); it != end; ++it)
+  {
+    cv::Point2f vtx[4];
+    it->points(vtx);
+    for(int i=0; i<4; ++i) cv::line(temp, vtx[i], vtx[i<3?i+1:0], cv::Scalar(200,100,100), 2, CV_AA);
+  }
+  cv::namedWindow("rect_temp");
+  cv::imshow("rect_temp",temp);
+
+  //ç„¡é§„ãªå››è§’å½¢ã‚’é¸æŠã•ã›å‰Šé™¤
+  std::cout << "--Choose \"Disenable Rect\"--" << std::endl;
+  {
+    std::tuple<cv::Mat*,std::vector<cv::RotatedRect>*,std::vector<cv::RotatedRect>*> send_data(&image,&red_boxes,&black_boxes);
+    cv::setMouseCallback("rect_temp",disenable_rect_input,&send_data);
+
+    char inputkey;
+    while(inputkey = cv::waitKey(0), inputkey != 'q'); //qãŒå…¥åŠ›ã•ã‚Œã‚‹ã¾ã§å¾…æ©Ÿ
+  }
+  cv::destroyWindow("rect_temp");
+  std::cout << "--End--\n" << std::endl;
+
+  //å·¦ä¸ŠåŸºæº–ã§ã‚½ãƒ¼ãƒˆï¼å·¦ä¸Š->å³ä¸Š->å·¦ä¸‹->å³ä¸‹(å®Ÿè£…ã§Î»å¼ä½¿ã£ã¦ã‚‹ã‘ã©æ€–ããªã„ã§ã™ã‚ˆï¼Ÿ)
+  std::sort(black_boxes.begin(),black_boxes.end(),
+    [](const cv::RotatedRect& lhs,const cv::RotatedRect& rhs)->bool{
+      return (lhs.center.y == rhs.center.y) ? (lhs.center.x < rhs.center.x) : (lhs.center.y < rhs.center.y);
+    });
+
+  //ã‚°ãƒ«ãƒ¼ãƒ—åˆ†ã‘
+  std::cout << "--Start \"Grouping\"--" << std::endl;
+  std::vector<std::vector<cv::RotatedRect>> groups;
+  grouping(groups,black_boxes);
+  merge(groups);
+  std::cout << "--End--\n" << std::endl;
+
+  //èµ¤ã‚’çªã£è¾¼ã‚€
+  for(auto it=red_boxes.cbegin(), end=red_boxes.cend(); it != end; ++it)
+  {
+    std::vector<cv::RotatedRect> group;
+    group.push_back(*it);
+    groups.push_back(std::move(group));
+  }
+  
+  //ã‚°ãƒ«ãƒ¼ãƒ—æ›¸ãå‡ºã—ï¼
+  temp = image.clone();
+  const CvScalar colors[] = {CV_RGB(0,0,255),CV_RGB(0,255,0),CV_RGB(255,0,0),CV_RGB(255,255,0),CV_RGB(0,255,255),CV_RGB(255,0,255),CV_RGB(255,255,255)};
+  for(size_t i=0; i<groups.size(); ++i)
+  {
+    for(auto it = groups[i].cbegin(); it != groups[i].cend(); ++it)
+    {
+      cv::Point2f vtx[4];
+      it->points(vtx);
+      for(int j=0; j<4; ++j) cv::line(temp, vtx[j], vtx[j<3?j+1:0], colors[i%7], 2, CV_AA);
+    }
+  }
+  cv::namedWindow("grouped_temp");
+  cv::imshow("grouped_temp",temp);
+  {
+    char inputkey;
+    while(inputkey = cv::waitKey(0), inputkey != 'q'); //qãŒå…¥åŠ›ã•ã‚Œã‚‹ã¾ã§å¾…æ©Ÿ
+  }
+  cv::destroyWindow("grouped_temp");
+
+  //
+  // ç¶ºéº—ãªçŸ©å½¢ã«ãªã‚‰ãªã„ã§ã™ã‚ˆã­
+  //
+  temp = image.clone();
+  std::vector<cv::RotatedRect> group_area;
+  for(size_t i = 0; i < groups.size(); ++i)
+  {
+    std::vector<cv::Point2f> points;
+    for(auto it = groups[i].begin(); it != groups[i].end(); ++it)
+    {
+      cv::Point2f vtx[4];
+      it->points(vtx);
+      for(int j=0; j<4; ++j) points.push_back(vtx[j]);
+    }
+    group_area.push_back(cv::minAreaRect(points));
+  }
+  for(size_t i = 0; i<group_area.size(); ++i)
+  {
+    //group_area[i].angle -= 40.0;
+    cv::Point2f vtx[4];
+    group_area[i].points(vtx);
+    for(int j=0; j<4; ++j) cv::line(temp, vtx[j], vtx[j<3?j+1:0], colors[i%7], 2, CV_AA);
+  }
+  cv::namedWindow("grouped");
+  cv::imshow("grouped",temp);
+  {
+    char inputkey;
+    while(inputkey = cv::waitKey(0), inputkey != 'q'); //qãŒå…¥åŠ›ã•ã‚Œã‚‹ã¾ã§å¾…æ©Ÿ
+  }
+  cv::destroyWindow("grouped");
+
+
+  //cv::waitKey(0);
+
 
   return 0;
 }
