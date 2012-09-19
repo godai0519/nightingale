@@ -41,9 +41,10 @@ int main()
         }
     }
     
-    int big_num, mid_num, sml_num;
-    BOOST_FOREACH(std::tie(big_num, mid_num, sml_num),data)
-        std::cout << boost::format("%1% %2% %3%") % big_num % mid_num % sml_num << std::endl;
+    for(auto it = data.cbegin(); it != data.cend(); ++it)
+    {
+        std::cout << std::get<0>(*it) << " " << std::get<1>(*it) << " " << std::get<2>(*it) << std::endl;
+    }
 
     return 0;
 }
