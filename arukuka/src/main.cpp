@@ -1,16 +1,11 @@
-﻿
-/*
- * C++11 を使っています、 g++ (GCC) 4.7.1 で。
- * もしかしたら他の環境ではエラーが出るかもしれません。
- * g++-4.7 -std=c++11 main.cpp -o main -Wall `pkg-config --libs opencv` `pkg-config --cflags opencv`
- */
-
-#include <opencv2/core/core.hpp>
+﻿#include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>
 #include <thread>
 #include <vector>
+#include <map>
+#include <cmath>
 
 #ifdef _WIN32
 #ifdef _DEBUG
@@ -272,14 +267,11 @@ void draw(){
 	cv::Mat drawing = cv::Mat::zeros( out.size(), CV_8UC3 );
 	for( uint i = 0; i< contours.size(); i++ ){ 
 		cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-		int width = boundRect[i].br().x - boundRect[i].tl().x;
-		int height = boundRect[i].br().y - boundRect[i].tl().y;
 		cv::rectangle( drawing, boundRect[i].tl(), boundRect[i].br(), color, 2, 8, 0 );
 		cv::circle( drawing, center[i], (int)radius[i], color, 2, CV_AA);
 		++count;
-		if(n==0){width>>=1; height>>=1;}
-		std::cout << width << ", " << height << std::endl;
-		int S = width*height;
+		int S = (int)(radius[i]*radius[i]*M_PI);
+		if(n==0){ S>>=2; }
 		if(_map.find(S)!=_map.end()){
 			_map[S] = _map[S]+1;
 		}else{
@@ -357,13 +349,14 @@ void pre_pros_red(cv::Mat const& src, cv::Mat &dst, cv::Mat &red){
 	red_area(red,hsv);
 }
 void pre_pros_black(cv::Mat const& src, cv::Mat &dst, cv::Mat &black){
-	cv::dilate(src, dst, cv::Mat());
-	normalise(dst, dst);
+	normalise(src, dst);
 	sharp(dst, dst, 6.4f);
+	cv::erode(dst, dst, cv::Mat());
+	cv::dilate(dst, dst, cv::Mat());
+	cv::medianBlur(dst, dst, 3);
 	
 	black_area(black,dst);
 }
-
 
 int main(int argc, char** argv)
 {
@@ -449,9 +442,8 @@ int main(int argc, char** argv)
 		
 		double g=INF;
 		std::cin >> g;
-		g -= ans[2]*5.902;
-		g -= ans[1]*1.35;
 		int _small = (int)(g/0.274 + 0.5);
+		_small -= ans[1] + ans[2];
 		ans[0] = std::min(ans[0], _small);	// ノイズ混入が考えられるのでminで
 		
 		std::cout << "Answer..." << ans[0] << ", " << ans[1] << ", " << ans[2] << std::endl;
